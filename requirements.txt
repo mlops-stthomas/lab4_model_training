@@ -1,0 +1,14 @@
+# Pin Airflow to 2.10.2 with constraints for your Python version (3.9 / 3.10 / 3.11)
+apache-airflow==2.10.2 \
+  --constraint https://raw.githubusercontent.com/apache/airflow/constraints-2.10.2/constraints-3.10.txt
+
+# --- ML / Data dependencies ---
+scikit-learn==1.5.2
+pandas==2.2.2
+joblib==1.4.2
+
+# --- Cloud integration (for S3 lab later) ---
+boto3==1.35.36
+
+# --- Teaching extras ---
+pytest==8.3.3
