@@ -1,62 +1,49 @@
 #!/usr/bin/env bash
-set -e
+set -euo pipefail
 
 # -------------------------------------------
-# Airflow Lab Setup Script
+# Airflow Lab Setup Script (project-isolated)
 # -------------------------------------------
 
-AIRFLOW_HOME_DIR="$(pwd)/airflow_home"
-SHELL_RC=""
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+VENV_DIR="$PROJECT_ROOT/venv"
+AIRFLOW_HOME_DIR="$PROJECT_ROOT/airflow_home"
 
-# Detect which shell rc file to use
-if [[ -n "$ZSH_VERSION" ]]; then
-  SHELL_RC="$HOME/.zshrc"
-elif [[ -n "$BASH_VERSION" ]]; then
-  SHELL_RC="$HOME/.bashrc"
-else
-  SHELL_RC="$HOME/.profile"
-fi
+export AIRFLOW_HOME="$AIRFLOW_HOME_DIR"
+export AIRFLOW__CORE__DAGS_FOLDER="$PROJECT_ROOT/dags"
+export AIRFLOW__CORE__PLUGINS_FOLDER="$PROJECT_ROOT/plugins"
+export AIRFLOW__LOGGING__BASE_LOG_FOLDER="$AIRFLOW_HOME/logs"
+export AIRFLOW__DATABASE__SQL_ALCHEMY_CONN="sqlite:///$AIRFLOW_HOME/airflow.db"
+export AIRFLOW__CORE__LOAD_EXAMPLES="False"
 
-# 1. Persist AIRFLOW_HOME in shell rc
-if ! grep -q "AIRFLOW_HOME=" "$SHELL_RC"; then
-  echo "export AIRFLOW_HOME=$AIRFLOW_HOME_DIR" >> "$SHELL_RC"
-  echo "Added AIRFLOW_HOME to $SHELL_RC"
-else
-  echo "AIRFLOW_HOME already set in $SHELL_RC"
-fi
+echo "PROJECT_ROOT=$PROJECT_ROOT"
+echo "AIRFLOW_HOME=$AIRFLOW_HOME"
 
-# Also set for this session so script works immediately
-export AIRFLOW_HOME=$AIRFLOW_HOME_DIR
+# Create local folders
 mkdir -p "$AIRFLOW_HOME"
+mkdir -p "$PROJECT_ROOT/dags"
+mkdir -p "$PROJECT_ROOT/plugins"
+mkdir -p "$AIRFLOW_HOME/logs"
 
-# 2. Initialize Airflow metadata DB
-echo "Initializing Airflow database..."
+# Activate local virtual environment if it exists
+if [[ -d "$VENV_DIR" ]]; then
+  # shellcheck disable=SC1091
+  source "$VENV_DIR/bin/activate"
+  echo "Activated virtual environment: $VENV_DIR"
+else
+  echo "Warning: no virtual environment found at $VENV_DIR"
+fi
+
+# Initialize Airflow metadata DB locally
 airflow db init
 
-# 3. Create admin user (skip if exists)
-echo "Creating admin user (username=admin, password=admin)..."
-airflow users create \
-  --username admin \
-  --password admin \
-  --firstname Air \
-  --lastname Flow \
-  --role Admin \
-  --email admin@example.com || true
-
-# 4. Symlink project DAGs into AIRFLOW_HOME
-if [ ! -L "$AIRFLOW_HOME/dags" ]; then
-  echo "Linking project dags/ into $AIRFLOW_HOME/dags..."
-  rm -rf "$AIRFLOW_HOME/dags"
-  ln -s "$(pwd)/dags" "$AIRFLOW_HOME/dags"
-else
-  echo "DAGs already linked."
-fi
-
-echo ""
-echo "✅ Airflow setup complete!"
-echo "Open a new terminal or run: source $SHELL_RC"
-echo ""
-echo "Then start Airflow:"
-echo "  Terminal 1: airflow scheduler"
-echo "  Terminal 2: airflow webserver --port 8080"
-echo "Login at http://localhost:8080 with admin / admin"
+echo
+echo "Airflow lab environment is set up locally."
+echo "Nothing was written to ~/.bashrc, ~/.zshrc, or ~/.profile."
+echo
+echo "To use this environment in the current shell:"
+echo "  source ./setup_airflow.sh"
+echo
+echo "Then run:"
+echo "  airflow webserver --port 8080"
+echo "  airflow scheduler"
