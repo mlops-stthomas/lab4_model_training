@@ -1,0 +1,20 @@
+# Copyright (c) 2026 Luca and Pam. All rights reserved.
+
+FROM python:3.10
+
+WORKDIR /opt/project
+
+# Copy requirements and install dependencies
+COPY requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
+
+# Copy project code
+COPY src/ ./src/
+COPY scripts/ ./scripts/
+
+# Expose the API port
+EXPOSE 8000
+
+# Run the FastAPI server
+CMD ["python", "scripts/serve_api.py", "--host", "0.0.0.0", "--port", "8000"]
+

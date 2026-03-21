@@ -34,8 +34,14 @@ else
   echo "Warning: no virtual environment found at $VENV_DIR"
 fi
 
-# Initialize Airflow metadata DB locally
-airflow db init
+# Allow callers (for example Docker containers) to source this script
+# only for environment setup without reinitializing the metadata DB.
+if [[ "${AIRFLOW_SKIP_DB_INIT:-0}" != "1" ]]; then
+  # Initialize Airflow metadata DB locally
+  airflow db init
+else
+  echo "Skipping airflow db init because AIRFLOW_SKIP_DB_INIT=1"
+fi
 
 echo
 echo "Airflow lab environment is set up locally."
