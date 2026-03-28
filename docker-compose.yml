@@ -1,0 +1,67 @@
+# Copyright (c) 2026 Luca and Pam. All rights reserved.
+
+services:
+  airflow-webserver:
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
+    environment:
+      AIRFLOW_SKIP_DB_INIT: "0"
+    working_dir: /opt/project
+    volumes:
+      - .:/opt/project
+    ports:
+      - "8080:8080"
+    entrypoint: /bin/bash
+    command:
+      - -lc
+      - |
+        source /opt/project/setup_airflow.sh
+          python /opt/project/scripts/generate_data.py
+        airflow users create \
+          --username admin \
+          --password admin \
+          --firstname Admin \
+          --lastname User \
+          --role Admin \
+          --email admin@example.com || true
+        airflow webserver --port 8080 --host 0.0.0.0
+
+  airflow-scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
+    depends_on:
+      - airflow-webserver
+    environment:
+      AIRFLOW_SKIP_DB_INIT: "1"
+    working_dir: /opt/project
+    volumes:
+      - .:/opt/project
+    entrypoint: /bin/bash
+    command:
+      - -lc
+      - |
+        source /opt/project/setup_airflow.sh
+        airflow scheduler
+
+  localstack:
+    image: localstack/localstack:3.8
+    environment:
+      - SERVICES=s3
+      - AWS_DEFAULT_REGION=us-east-1
+      - DEBUG=0
+    ports:
+      - 4566:4566
+
+  fast-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.fastapi
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/opt/project
+      - ./models:/opt/project/models
+    working_dir: /opt/project
+    command: python scripts/serve_api.py --host 0.0.0.0 --port 8000

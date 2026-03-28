@@ -1,0 +1,12 @@
+__pycache__
+airflow_home
+.venv
+venv
+*.pyc
+*.pyo
+*.pyd
+data
+models
+plugins
+.DS_Store
+.vscode

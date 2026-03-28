@@ -78,7 +78,48 @@ Afterwards, open a new terminal (or `source ~/.bashrc` / `~/.zshrc`) so `$AIRFLO
 
 ---
 
-## 🚀 Running Airflow
+## 🐳 Running Airflow with Docker Compose (recommended)
+
+This repo now includes a Docker Compose stack that runs:
+- Airflow scheduler
+- Airflow webserver
+
+`airflow-webserver` sources `setup_airflow.sh` on startup and performs one-time initialization.
+
+Start the stack:
+
+```bash
+python scripts/control_stack.py --up --detach
+```
+
+Check status:
+
+```bash
+python scripts/control_stack.py --status
+```
+
+Show logs:
+
+```bash
+python scripts/control_stack.py --logs --logs-tail 200
+```
+
+Stop stack:
+
+```bash
+python scripts/control_stack.py --stop
+```
+
+Bring down stack:
+
+```bash
+python scripts/control_stack.py --down
+```
+
+Visit Airflow UI 👉 http://localhost:8080  
+Login: `admin / admin`
+
+## 🚀 Running Airflow (local, non-Docker)
 
 Use two terminals:
 
@@ -139,6 +180,18 @@ After training the model, you can serve it with FastAPI.
 
 ```
 python scripts/serve_api.py
+```
+
+Or start it from the control CLI:
+
+```bash
+python scripts/control_stack.py --start-api
+```
+
+You can also pass host/port/model path:
+
+```bash
+python scripts/control_stack.py --start-api --api-host 0.0.0.0 --api-port 8000 --api-model-path models/iris_model.pkl
 ```
 
 2. Open docs: http://<ipaddress>:8000/docs  

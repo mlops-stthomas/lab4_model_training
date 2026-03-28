@@ -1,0 +1,8 @@
+# Copyright (c) 2026 Luca and Pam. All rights reserved.
+
+FROM apache/airflow:2.10.2-python3.10
+
+WORKDIR /opt/project
+
+COPY requirements-airflow-docker.txt /tmp/requirements-airflow-docker.txt
+RUN pip install --no-cache-dir -r /tmp/requirements-airflow-docker.txt
