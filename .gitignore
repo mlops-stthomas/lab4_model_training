@@ -1,2 +1,5 @@
 venv
 airflow_home
+.idea
+.DS_Store
+src/.DS_Store
