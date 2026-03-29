@@ -2,6 +2,8 @@
 
 By Luca Comba and Pam Savira.
 
+Source code available at: [https://github.com/lukfd/lab4_model_training](https://github.com/lukfd/lab4_model_training)
+
 # Introduction
 
 We developed the new training pipeline and implemented the new `model/info` endpoint.
@@ -116,3 +118,28 @@ After the run of the DAG, the FastAPI application showed successfully the openap
 ![fastapi document page screenshot](fastapi.png)
 
 ![model info page screenshot](info.png)
+
+# Short Answers
+
+1. What problems existed in the original lab system?
+
+- No evaluation since any model, good or bad, was immediately saved as production
+- No promotion step since train equals deploy, and there is no quality gate
+- No versioning since every run overwrote iris_model.pkl
+- No remote storage since artifacts were local only
+
+2. Why is storing models locally dangerous in production systems?
+
+There is a lack of decoupling. A container restart, disk failure, or new deployment wipes the file. Multiple API instances can't share a local file. There's no audit trail when it gets overwritten.
+
+3. Why do we add evaluation before promoting a model?
+
+Training always produces a model, although it will not necessarily be a good one. The evaluation gate prevents a degraded model from reaching production; if evaluation fails, the pipeline halts and the current production model stays untouched.
+
+4. Why do we need model versioning?
+
+So we can roll back when a new model regresses, trace exactly what was serving during an incident, and enable A/B testing. Without versions, every promotion silently destroys the previous artifact.
+
+5. Why might managing models manually become diffi cult as the number of models grows?
+
+It's manageable with 2 models. With 20+ models however, we lose track of what's current vs under evaluation vs failed. Each model's thresholds and paths diverge. Deployments require manual coordination, and there's no single source of truth. Therefore, we need a proper model registry.
