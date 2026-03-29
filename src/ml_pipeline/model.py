@@ -57,14 +57,8 @@ def promote_model(
     s3_key: str = "models/breast_cancer_model.pkl",
     model_version: str = None,
 ) -> bool:
-    """Promote model to S3 if accuracy meets the threshold.
+    # Promote model to S3 if accuracy meets the threshold.
 
-    Uploads a versioned folder to S3 with the following structure:
-        models/breast_cancer/<model_version>/
-            metadata.json   - version, dataset, model type, accuracy
-            metrics.json    - accuracy
-            model.pkl       - the trained model
-    """
     print(f"Performing check on {model_path} (accuracy={accuracy:.4f}), threshold={threshold:.4f}")
 
     if accuracy < threshold:

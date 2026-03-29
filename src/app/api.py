@@ -57,19 +57,10 @@ FEATURE_ORDER = [
 
 
 def load_latest_model_from_s3(bucket: str, prefix: str = "models/breast_cancer/"):
-    """
-    Lists all versioned folders under `prefix`, picks the lexicographically
-    latest one (versions are YYYYmmddHHMMSS so this is also chronologically
-    latest), then downloads model.pkl and metadata.json from that folder via
-    the aws cli.
 
-    Returns:
-        model:    the loaded sklearn model
-        metadata: dict with model_version, dataset, model_type, accuracy
-    """
     s3_prefix_uri = f"s3://{bucket}/{prefix}"
 
-    # List versioned subfolders
+    # List subfolders
     result = subprocess.run(
         ["aws", "s3api", "list-objects-v2",
          "--bucket", bucket,
@@ -123,10 +114,6 @@ def create_app(
     bucket: str = "mlops-hw3-models-astar",
     s3_prefix: str = "models/breast_cancer/",
 ):
-    """
-    Creates a FastAPI app that serves breast cancer predictions using the
-    latest promoted model version from S3.
-    """
     model, metadata = load_latest_model_from_s3(bucket, s3_prefix)
 
     app = FastAPI(title="Breast Cancer Model API")
