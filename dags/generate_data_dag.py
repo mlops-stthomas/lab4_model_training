@@ -20,5 +20,5 @@ with DAG(
     generate_task = PythonOperator(
         task_id="generate_data",
         python_callable=generate_data,
-        op_kwargs={"output_path": "data/iris.csv"},
+        op_kwargs={"output_path": "data/breast_cancer.csv"},
     )

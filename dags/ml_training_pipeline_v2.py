@@ -37,8 +37,8 @@ with DAG(
         python_callable=train_model_wrapper,
         retries=1,
         op_kwargs={
-            "data_path": "data/iris.csv",
-            "model_path_template": "models/{run_id}/iris_model.pkl",
+            "data_path": "data/breast_cancer.csv",
+            "model_path_template": "models/{run_id}/breast_cancer_model.pkl",
         },
     )
 
@@ -54,7 +54,7 @@ with DAG(
         python_callable=evaluate_model_wrapper,
         retries=1,
         op_kwargs={
-            "data_path": "data/iris.csv",
+            "data_path": "data/breast_cancer.csv",
         },
     )
 
@@ -62,14 +62,20 @@ with DAG(
     def promote_model_wrapper(**context):
         model_path = context["ti"].xcom_pull(task_ids="train_model", key="model_path")
         accuracy = context["ti"].xcom_pull(task_ids="evaluate_model", key="accuracy")
-        run_id = context["run_id"].replace(":", "_").replace("+", "_")
         threshold = context["dag"].default_args.get("promotion_threshold", 0.95)
+
+        timestamp = context.get("execution_date")
+        if timestamp:
+            model_version = timestamp.strftime("%Y%m%d%H%M%S")
+        else:
+            model_version = datetime.datetime.now(datetime.UTC).strftime("%Y%m%d%H%M%S")
+
         promote_model(
             model_path=model_path,
             accuracy=accuracy,
             threshold=threshold,
             bucket="mlops-hw3-models-astar",
-            s3_key=f"models/iris_model-{run_id}.pkl",
+            model_version=model_version,
         )
 
     promote_task = PythonOperator(

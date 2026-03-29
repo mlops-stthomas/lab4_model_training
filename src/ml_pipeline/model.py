@@ -1,5 +1,7 @@
 import os
+import json
 import subprocess
+import tempfile
 import joblib
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -8,7 +10,7 @@ from sklearn.metrics import accuracy_score
 
 
 
-def train_model(df: pd.DataFrame, model_path: str = "models/iris_model.pkl") -> float:
+def train_model(df: pd.DataFrame, model_path: str = "models/breast_cancer_model.pkl") -> float:
     """Train a logistic regression classifier and save it."""
     X = df.drop(columns=["target"])
     y = df["target"]
@@ -30,7 +32,7 @@ def train_model(df: pd.DataFrame, model_path: str = "models/iris_model.pkl") -> 
 
     return acc
 
-def evaluate_model(df: pd.DataFrame, model_path: str = "models/iris_model.pkl") -> float:
+def evaluate_model(df: pd.DataFrame, model_path: str = "models/breast_cancer_model.pkl") -> float:
 
     # Loading Model from Stored Pickle File
     model = joblib.load(model_path)
@@ -48,32 +50,66 @@ def evaluate_model(df: pd.DataFrame, model_path: str = "models/iris_model.pkl") 
     return accuracy
 
 def promote_model(
-    model_path: str = "models/iris_model.pkl",
+    model_path: str = "models/breast_cancer_model.pkl",
     accuracy: float = 0.0,
     threshold: float = 0.95,
     bucket: str = "mlops-hw3-models-astar",
-    s3_key: str = "models/iris_model.pkl"
+    s3_key: str = "models/breast_cancer_model.pkl",
+    model_version: str = None,
 ) -> bool:
+    """Promote model to S3 if accuracy meets the threshold.
 
-    print(f"Performing Check on {model_path}, which has an accuracy of {accuracy}, will upload to {bucket}/{s3_key} ")
-    print(os.environ.values())
-    """Promote model to S3 if accuracy meets the threshold."""
+    Uploads a versioned folder to S3 with the following structure:
+        models/breast_cancer/<model_version>/
+            metadata.json   - version, dataset, model type, accuracy
+            metrics.json    - accuracy
+            model.pkl       - the trained model
+    """
+    print(f"Performing check on {model_path} (accuracy={accuracy:.4f}), threshold={threshold:.4f}")
+
     if accuracy < threshold:
         print(f"Promotion skipped: {accuracy:.4f} < threshold {threshold:.4f}")
         return False
-    print("Promotion Passed")
 
+    print("Promotion passed — preparing versioned upload bundle")
 
-    # First tried boto3, but this cause deadlock issues, resorted to calling the aws cli directly
-    result = subprocess.run(
-        ["aws", "s3", "cp", model_path, f"s3://{bucket}/{s3_key}"],
-        capture_output=True,
-        text=True,
-        timeout=30
-    )
+    with tempfile.TemporaryDirectory() as staging_dir:
+        # metadata.json
+        metadata = {
+            "model_version": model_version,
+            "dataset": "breast_cancer",
+            "model_type": "logistic_regression",
+            "accuracy": round(accuracy, 4),
+        }
+        metadata_path = os.path.join(staging_dir, "metadata.json")
+        with open(metadata_path, "w") as f:
+            json.dump(metadata, f, indent=2)
+
+        # metrics.json
+        metrics = {
+            "accuracy": round(accuracy, 4),
+        }
+        metrics_path = os.path.join(staging_dir, "metrics.json")
+        with open(metrics_path, "w") as f:
+            json.dump(metrics, f, indent=2)
+
+        # model.pkl
+        pkl_path = os.path.join(staging_dir, "model.pkl")
+        with open(model_path, "rb") as src, open(pkl_path, "wb") as dst:
+            dst.write(src.read())
+
+        # Upload the staging directory as a versioned S3 folder.
+        # First tried boto3, but this caused deadlock issues — using aws cli directly via subprocess.
+        s3_prefix = f"s3://{bucket}/models/breast_cancer/{model_version}/"
+        result = subprocess.run(
+            ["aws", "s3", "cp", staging_dir, s3_prefix, "--recursive"],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
 
     if result.returncode != 0:
         raise RuntimeError(f"S3 upload failed: {result.stderr}")
 
-    print(f"Promoted model to s3://{bucket}/{s3_key}")
+    print(f"Promoted model bundle to {s3_prefix}")
     return True
