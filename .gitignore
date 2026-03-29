@@ -5,3 +5,5 @@ airflow_home
 src/.DS_Store
 models/*
 !models/.gitkeep
+
+src/app/__pycache__
