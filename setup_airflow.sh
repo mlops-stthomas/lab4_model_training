@@ -19,23 +19,23 @@ export AIRFLOW__CORE__LOAD_EXAMPLES="False"
 echo "PROJECT_ROOT=$PROJECT_ROOT"
 echo "AIRFLOW_HOME=$AIRFLOW_HOME"
 
-# Create local folders
-mkdir -p "$AIRFLOW_HOME"
-mkdir -p "$PROJECT_ROOT/dags"
-mkdir -p "$PROJECT_ROOT/plugins"
-mkdir -p "$AIRFLOW_HOME/logs"
-
-# Activate local virtual environment if it exists
-if [[ -d "$VENV_DIR" ]]; then
-  # shellcheck disable=SC1091
-  source "$VENV_DIR/bin/activate"
-  echo "Activated virtual environment: $VENV_DIR"
-else
-  echo "Warning: no virtual environment found at $VENV_DIR"
-fi
-
-# Initialize Airflow metadata DB locally
-airflow db init
+## Create local folders
+#mkdir -p "$AIRFLOW_HOME"
+#mkdir -p "$PROJECT_ROOT/dags"
+#mkdir -p "$PROJECT_ROOT/plugins"
+#mkdir -p "$AIRFLOW_HOME/logs"
+#
+## Activate local virtual environment if it exists
+#if [[ -d "$VENV_DIR" ]]; then
+#  # shellcheck disable=SC1091
+#  source "$VENV_DIR/bin/activate"
+#  echo "Activated virtual environment: $VENV_DIR"
+#else
+#  echo "Warning: no virtual environment found at $VENV_DIR"
+#fi
+#
+## Initialize Airflow metadata DB locally
+#airflow db init
 
 echo
 echo "Airflow lab environment is set up locally."
